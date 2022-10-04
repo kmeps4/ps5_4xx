@@ -1,4 +1,4 @@
-# PS5 4.03 Kernel Exploit
+# PS5 4.03 & 4.50 Kernel Exploit
 ---
 ## Summary
 This repo contains an experimental WebKit ROP implementation of a PS5 kernel exploit based on **TheFlow's IPV6 Use-After-Free (UAF)**, which was [reported on HackerOne](https://hackerone.com/reports/1441103). The exploit strategy is for the most part based on TheFlow's BSD/PS4 PoC with some changes to accommodate the annoying PS5 memory layout (for more see *Research Notes* section). It establishes an arbitrary read / (semi-arbitrary) write primitive. This exploit and its capabilities have a lot of limitations, and as such, it's mostly intended for developers to play with to reverse engineer some parts of the system.
@@ -7,6 +7,7 @@ Also note; stability is fairly low, especially compared to PS4 exploits. This is
 
 This could possibly work on 4.50 as well via substituting valid 4.50 gadget offsets + kernel slides, but that will be for future work.
 
+Those interested in contributing to PS5 research/dev can join a discord I have setup [here](https://discord.gg/kbrzGuH3F6).
 
 
 ## Currently Included
@@ -105,7 +106,6 @@ Stability for this exploit is at about 30%, and has multiple potential points of
 - Sometimes this audio corruption persists to the next boot, unsure why.
 - Similar to PS4, the PS5 will require the power button to be manually pressed on the console twice to restart after a panic.
 - It is normal for the PS5 to take an absurd amount of time to reboot from a panic if it's isolated from the internet (unfortunately). Expect boot to take 3-4 minutes.
-
 
 
 ## Contributors / Special Thanks
