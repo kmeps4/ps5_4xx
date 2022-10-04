@@ -34,7 +34,7 @@ Those interested in contributing to PS5 research/dev can join a discord I have s
 
 1. Configure Al-Azid DNS on your PS5: The DNS servers are 165.227.83.145 and 192.241.221.79
 2. Go to User's Guide Browser and press L2 button 2 times so you can write down a custom URL.
-3. Go to https://www.kmeps4.github.io/ps5_403/index.html
+3. Go to https://www.kmeps4.github.io/ps5_4xx/index.html
 4. If it done with success you should be able to see "Debug Settings" Option Enabled.
 
 
