@@ -1,11 +1,11 @@
-# PS5 4.03 & 4.50 Kernel Exploit
+# PS5 4.03/4.50/4.51 Kernel Exploit
 ---
 ## Summary
 This repo contains an experimental WebKit ROP implementation of a PS5 kernel exploit based on **TheFlow's IPV6 Use-After-Free (UAF)**, which was [reported on HackerOne](https://hackerone.com/reports/1441103). The exploit strategy is for the most part based on TheFlow's BSD/PS4 PoC with some changes to accommodate the annoying PS5 memory layout (for more see *Research Notes* section). It establishes an arbitrary read / (semi-arbitrary) write primitive. This exploit and its capabilities have a lot of limitations, and as such, it's mostly intended for developers to play with to reverse engineer some parts of the system.
 
 Also note; stability is fairly low, especially compared to PS4 exploits. This is due to the bug's nature of being tied to a race condition as well as the mitigations and memory layout of the PS5. This document will contain research info about the PS5, and this exploit will undergo continued development and improvements as time goes on.
 
-This could possibly work on 4.50 as well via substituting valid 4.50 gadget offsets + kernel slides, but that will be for future work.
+This should now work on 4.03/4.50/4.51 firmware.
 
 Those interested in contributing to PS5 research/dev can join a discord I have setup [here](https://discord.gg/kbrzGuH3F6).
 
@@ -108,6 +108,7 @@ Stability for this exploit is at about 30%, and has multiple potential points of
 - It is normal for the PS5 to take an absurd amount of time to reboot from a panic if it's isolated from the internet (unfortunately). Expect boot to take 3-4 minutes.
 
 
+
 ## Contributors / Special Thanks
 - [Andy Nguyen / theflow0](https://twitter.com/theflow0) - Vulnerability and exploit strategy
 - [ChendoChap](https://github.com/ChendoChap) - Various help with testing and research
@@ -118,3 +119,9 @@ Stability for this exploit is at about 30%, and has multiple potential points of
 - [zecoxao](https://twitter.com/notzecoxao) - Research/RE
 - [SocracticBliss](https://twitter.com/SocraticBliss) - Research/RE
 - laureeeeeee - Background low-level systems knowledge and assistance
+
+
+
+## Thanks to testers
+
+- Dizz (4.50)
