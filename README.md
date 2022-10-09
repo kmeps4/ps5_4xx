@@ -1,13 +1,19 @@
-# PS5 4.03/4.50/4.51 Kernel Exploit
+# PS5 4.xx Kernel Exploit
 ---
 ## Summary
 This repo contains an experimental WebKit ROP implementation of a PS5 kernel exploit based on **TheFlow's IPV6 Use-After-Free (UAF)**, which was [reported on HackerOne](https://hackerone.com/reports/1441103). The exploit strategy is for the most part based on TheFlow's BSD/PS4 PoC with some changes to accommodate the annoying PS5 memory layout (for more see *Research Notes* section). It establishes an arbitrary read / (semi-arbitrary) write primitive. This exploit and its capabilities have a lot of limitations, and as such, it's mostly intended for developers to play with to reverse engineer some parts of the system.
 
-Also note; stability is fairly low, especially compared to PS4 exploits. This is due to the bug's nature of being tied to a race condition as well as the mitigations and memory layout of the PS5. This document will contain research info about the PS5, and this exploit will undergo continued development and improvements as time goes on.
-
-This should now work on 4.03/4.50/4.51 firmware.
+With latest stability improvements, reliability is at about 80%. This document will contain research info about the PS5, and this exploit will undergo continued development and improvements as time goes on.
 
 Those interested in contributing to PS5 research/dev can join a discord I have setup [here](https://discord.gg/kbrzGuH3F6).
+
+Exploit should now support the following firmwares (more to come):
+
+- 4.03
+- 4.50
+- 4.51
+
+
 
 
 ## Currently Included
@@ -25,57 +31,37 @@ Those interested in contributing to PS5 research/dev can join a discord I have s
 - Clang-based fine-grained Control Flow Integrity (CFI) is present and enforced.
 - Supervisor Mode Access Prevention/Execution (SMAP/SMEP) cannot be disabled, due to the HV.
 - The write primitive is somewhat constrained, as bytes 0x10-0x14 must be zero (or a valid network interface).
-- The exploit's stability is currently poor. More on this below.
-- On successful run, **exit the browser with circle button, PS button panics for a currently unknown reason**.
 
 
 
 ## How to use
 
-1. Configure Al-Azid DNS on your PS5: The DNS servers are 165.227.83.145 and 192.241.221.79
-2. Go to User's Guide Browser and press L2 button 2 times so you can write down a custom URL.
-3. Go to https://www.kmeps4.github.io/ps5_4xx/index.html
-4. If it done with success you should be able to see "Debug Settings" Option Enabled.
+1. Configure fakedns via `dns.conf` to point `manuals.playstation.net` to your PCs IP address
+2. Run fake dns: `python fakedns.py -c dns.conf`
+3. Run HTTPS server: `python host.py`
+4. Go into PS5 advanced network settings and set primary DNS to your PCs IP address and leave secondary at `0.0.0.0`
+   1. Sometimes the manual still won't load and a restart is needed, unsure why it's really weird
+5. Go to user manual in settings and accept untrusted certificate prompt, run
+6. Optional: Run rpc/dump server scripts (note: address/port must be substituted in binary form into exploit.js).
 
 
 
 ## Future work
 - [x] ~~Fix-up sockets to exit browser cleanly (top prio)~~
-- [ ] Write some data patches (second prio)
+- [x] ~~Write some data patches (second prio)~~
   - [x] ~~Enable debug settings~~
   - [x] ~~Patch creds for uid0~~
-  - [ ] Jailbreak w/ cr_prison overwrite
-- [ ] Improve UAF reliability
-- [ ] Improve victim socket reliability (third prio)
-- [ ] Use a better / more consistent leak target than kqueue
+  - [x] ~~Jailbreak w/ cr_prison overwrite~~
+- [x] ~~Improve UAF reliability~~
+- [x] ~~Improve victim socket reliability (third prio)~~
+- [x] ~~Use a better / more consistent leak target than kqueue~~ (no longer necessary)
+- [ ] Make ELF loader support relocations
 
 
 
-## Using RPC and Dumping Kernel .data
+## Using ELF Loader
 
-**RPC**
-
-RPC is a very simple and limited setup.
-
-1. Edit your IP+port (if changed) into exploit.js.
-2. Run the server via `python rpcserver.py`, allow the PS5 to connect when the exploit finishes. The PS5 will send the kernel .data base address in ASCII and you can then send read and write commands. Example is below.
-
-```
-[RPC] Connection from: ('10.0.0.169', 59335)
-[RPC] Received kernel .data base: 0x0xffffffff88530000
-> r 0xffff81ce0334f000
-42 06 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00
-> w 0xffff81ce0334f004 0x1337
-Wrote qword.
-```
-
-This setup is somewhat jank and a better system will be in place soon.
-
-**Dump**
-
-1. Edit your IP+port (if changed) into exploit.js.
-2. Comment the RPC code in exploit.js and uncomment dumper code.
-3. Run the server via `python dumpserver.py`, allow the PS5 to connect and start dumping when exploit finishes. It will continue to dump data from the kernel base until it panics due to hitting unmapped memory. Note: read is somewhat slow at ~200kbps, so it may take 10 minutes or so to complete.
+To use the ELF loader, run the exploit until completion. Upon completion it'll run a server on port `:9020`. Connect and send your ELF to the PS5 over that port and it'll run it. Assuming the ELF doesn't crash the browser, it can continue to run ELFs forever.
 
 
 
@@ -86,21 +72,21 @@ This exploit works in 5 stages, and for the most part follows the same exploit s
 3) Infoleak step. Use `pktopts`/`rthdr` overlap to leak a kqueue from the 0x200 slab and `pktopts` from the 0x100 slab.
 4) Arbitrary read/write step. Fake `pktopts` again and find the overlap socket to use `IPV6_RTHDR` as a read/write primitive.
 4) Cleanup + patch step. Increase refcount on corrupted sockets for successful browser exit + patch data to enable debug menu and patch ucreds for uid0.
+4) Run ELF loader server that will accept and load/run ELFs. Currently WIP, does not support relocations at the moment.
 
 
 
 ## Stability Notes
-Stability for this exploit is at about 30%, and has multiple potential points of failure. In order of observed descending liklihood:
-1) *Stage 1* causes more than one UAF due to failing to catch one or more in the reclaim, causing latent corruption that causes a panic some time later on.
-2)  *Stage 4* finds the overlap/victim socket, but the pktopts is the same as the master socket's, causing the "read" primitive to just read back the pointer you attempt to read instead of that pointer's contents. This needs some improvement and to be fixed if possible because it's really annoying.
-3) *Stage 1*'s attempt to reclaim the UAF fails and something else steals the pointer, causing immediate panic.
-4) The kqueue leak fails and it fails to find a recognized kernel .data pointer.
-4) Leaving the browser through "unusual" means such as PS button, share button, or browser crash, will panic the kernel. Needs to be investigated.
+Stability for this exploit is at about ~~30%~~ 80-90%, and has two potential points of failure. In order of observed descending liklihood:
+1) *Stage 1* fails to reclaim the UAF, causing immediate crash or latent corruption that causes crash.
+2) *Stage 4* fails to find a victim socket
 
 
 
 ## Research Notes
-- It appears based on various testing and dumping with the read primitive, that the PS5 has reverted back to 0x1000 page size compared to the PS4's 0x4000.
+- ~~It appears based on various testing and dumping with the read primitive, that the PS5 has reverted back to 0x1000 page size compared to the PS4's 0x4000.~~
+  - After further research, the page size is indeed still 0x4000, however due to some insane allocator changes, different slabs can be allocated in the same virtual page.
+
 - It also seems on PS5 that adjacent pages rarely belong to the same slab, as you'll get vastly different data in adjacent pages. Memory layout seems more scattered.
 - Often when the PS5 panics (at least in webkit context), there will be awful audio output as the audio buffer gets corrupted in some way.
 - Sometimes this audio corruption persists to the next boot, unsure why.
@@ -124,4 +110,4 @@ Stability for this exploit is at about 30%, and has multiple potential points of
 
 ## Thanks to testers
 
-- Dizz (4.50)
+- Dizz (4.50/4.51)
